@@ -3,6 +3,7 @@ import scipy.signal
 from gym.spaces import Box, Discrete
 
 import torch
+import math
 import torch.nn as nn
 from torch.distributions.normal import Normal
 from torch.distributions.categorical import Categorical
@@ -69,8 +70,9 @@ class MLPCategoricalActor(Actor):
         super().__init__()
         self.logits_net = mlp([obs_dim] + list(hidden_sizes) + [act_dim], activation)
 
-    def _distribution(self, obs):
+    def _distribution(self, obs, candidates):
         logits = self.logits_net(obs)
+        logits[candidates] = -math.inf
         return Categorical(logits=logits)
 
     def _log_prob_from_distribution(self, pi, act):
@@ -112,7 +114,7 @@ class MLPActorCritic(nn.Module):
                  hidden_sizes=(64,64), activation=nn.Tanh):
         super().__init__()
 
-        obs_dim = observation_space.shape[0]
+        obs_dim = observation_space.n
 
         # policy builder depends on action space
         if isinstance(action_space, Box):
@@ -123,9 +125,10 @@ class MLPActorCritic(nn.Module):
         # build value function
         self.v  = MLPCritic(obs_dim, hidden_sizes, activation)
 
-    def step(self, obs):
+    def step(self, obs, candidate_idxs):
+        
         with torch.no_grad():
-            pi = self.pi._distribution(obs)
+            pi = self.pi._distribution(obs, candidate_idxs)
             a = pi.sample()
             logp_a = self.pi._log_prob_from_distribution(pi, a)
             v = self.v(obs)
