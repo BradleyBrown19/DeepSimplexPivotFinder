@@ -16,7 +16,7 @@ from collections import namedtuple
 import scipy.sparse as sps
 
 
-_LPProblem = namedtuple('_LPProblem', 'c A_ub b_ub A_eq b_eq bounds x0')
+# _LPProblem = namedtuple('_LPProblem', 'c A_ub b_ub A_eq b_eq bounds x0')
 
 
 def _get_Abc(lp, c0):

@@ -18,6 +18,8 @@ import scipy.sparse as sps
 
 from .scipy_utils import *
 
+_LPProblem = namedtuple('_LPProblem', 'c A_ub b_ub A_eq b_eq bounds x0')
+
 class SpicyGym(gym.Env):
     def __init__(self, data_dir):
         self.data_dir = data_dir
@@ -103,7 +105,7 @@ class SpicyGym(gym.Env):
         return (state, done, reward, info)
 
 
-    def simplex_generator(self, c, A_ub=None, b_ub=None, A_eq=None, b_eq=None, bounds=None, options=None):
+    def simplex_generator(self, c, A_ub=None, b_ub=None, A_eq=None, b_eq=None, bounds=None, options=None, x0=None):
         
         meth = "simplex"
         callback = None
