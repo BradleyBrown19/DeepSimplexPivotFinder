@@ -34,6 +34,17 @@ class SpicyGym(gym.Env):
         self.data_files = list(data_dir.glob("*"))
 
 
+    def scipy_to_brad(self, state):
+        T, tol, bland = state
+        ma = np.ma.masked_where(T[-1, :-1] >= -tol, T[-1, :-1], copy=False)
+        
+        # 1 if valid pivot choice, 0 if should be ignored
+        mult_by_valid = 1 - ma.mask
+
+        return (T, mult_by_valid)
+
+
+
     def reset(self):
         fname = self.data_dir / self.data_files[self.data_index]
         self.data_index = (self.data_index + 1) % len(self.data_files)
@@ -52,11 +63,11 @@ class SpicyGym(gym.Env):
         self.pivot = None
 
         try:
-            self.next = next(self.generator)
+            state = next(self.generator)
         except StopIteration:
-            self.done = True
-            print("Generator terminated without producing any elements - maybe did everything in phase 1?")
+            raise Exception("Generator terminated without producing any elements - maybe did everything in phase 1?")
 
+        return self.scipy_to_brad(state)
 
     def step(self, action):
         self.pivot = action
@@ -71,6 +82,8 @@ class SpicyGym(gym.Env):
 
         reward = -1
         info = {}
+
+        state = self.scipy_to_brad(state)
 
         return (state, done, reward, info)
 
