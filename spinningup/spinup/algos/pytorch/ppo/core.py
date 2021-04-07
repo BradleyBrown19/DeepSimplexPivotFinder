@@ -70,9 +70,12 @@ class MLPCategoricalActor(Actor):
         super().__init__()
         self.logits_net = mlp([obs_dim] + list(hidden_sizes) + [act_dim], activation)
 
-    def _distribution(self, obs, candidates):
+    def _distribution(self, obs, candidates=None, do_simplex=False):
         logits = self.logits_net(obs)
-        logits[candidates] = -math.inf
+
+        if do_simplex:
+            logits[candidates] = -math.inf
+
         return Categorical(logits=logits)
 
     def _log_prob_from_distribution(self, pi, act):
@@ -87,7 +90,7 @@ class MLPGaussianActor(Actor):
         self.log_std = torch.nn.Parameter(torch.as_tensor(log_std))
         self.mu_net = mlp([obs_dim] + list(hidden_sizes) + [act_dim], activation)
 
-    def _distribution(self, obs):
+    def _distribution(self, obs, do_simplex=False):
         mu = self.mu_net(obs)
         std = torch.exp(self.log_std)
         return Normal(mu, std)
@@ -111,10 +114,15 @@ class MLPActorCritic(nn.Module):
 
 
     def __init__(self, observation_space, action_space, 
-                 hidden_sizes=(64,64), activation=nn.Tanh):
+                 hidden_sizes=(64,64), activation=nn.Tanh, do_simplex=False):
         super().__init__()
 
-        obs_dim = observation_space.n
+        self.do_simplex = do_simplex
+
+        if self.do_simplex:
+            obs_dim = observation_space.n
+        else:
+            obs_dim = observation_space.shape[0]
 
         # policy builder depends on action space
         if isinstance(action_space, Box):
@@ -128,7 +136,7 @@ class MLPActorCritic(nn.Module):
     def step(self, obs, candidate_idxs):
         
         with torch.no_grad():
-            pi = self.pi._distribution(obs, candidate_idxs)
+            pi = self.pi._distribution(obs, candidate_idxs, self.do_simplex)
             a = pi.sample()
             logp_a = self.pi._log_prob_from_distribution(pi, a)
             v = self.v(obs)

@@ -50,15 +50,17 @@ class SimplexSolver():
         
         depart_index = self.get_departing_var(enter_index)
 
-        if self.do_stop:
-            print("ENTERING INDEX: ", enter_index)
-            print("DEPARTING INDEX: ", depart_index)
+        # if self.do_stop:
+        #     print("ENTERING INDEX: ", enter_index)
+        #     print("DEPARTING INDEX: ", depart_index)
 
-            print (DataFrame( [[round(r.numerator/r.denominator,2) for r in row] for row in self.tableau] ))
+        #     print (DataFrame( [[round(r.numerator/r.denominator,2) for r in row] for row in self.tableau] ))
 
         pivot = [enter_index, depart_index]
 
         if pivot[1] < 0:
+            print("BEFORE")
+            self.print_doc()
             raise Exception("There exists no non-negative pivot. Thus, the solution is infeasible.")
 
         # Do row operations to make every other element in column zero.
@@ -160,13 +162,13 @@ class SimplexSolver():
             self.c.pop()
             self.ineq = ['<='] * len(self.b)
 
-        if self.do_stop:
-            c2 = [x*-1 for x in self.c]
-            res = linprog(c=c2, A_ub=self.A, b_ub=self.b, method="simplex")
+        # if self.do_stop:
+        c2 = [x*-1 for x in self.c]
+        res = linprog(c=c2, A_ub=self.A, b_ub=self.b, method="simplex")
+
+        if res['status'] != 0:
             print("="*100)
             print(res)
-
-            import pdb; pdb.set_trace()
 
         self.create_tableau()
         self.ineq = ['='] * len(self.b)
@@ -484,6 +486,7 @@ class SimplexSolver():
         self.doc += (r"\end{document}")
         with open("solution.tex", "w") as tex:
             tex.write(self.doc)
+        print("WROTE DOC")
 
     def _fraction_to_latex(self, fract):
         if fract.denominator == 1:

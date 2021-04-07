@@ -16,8 +16,12 @@ class PPOBuffer:
     for calculating the advantages of state-action pairs.
     """
 
-    def __init__(self, obs_dim, act_dim, size, gamma=0.99, lam=0.95):
-        self.obs_buf = (np.zeros(core.combined_shape(size, obs_dim), dtype=np.float32),np.zeros(core.combined_shape(size, 37), dtype=np.float32))
+    def __init__(self, obs_dim, act_dim, size, gamma=0.99, lam=0.95, do_simplex=False):
+        self.do_simplex = do_simplex
+        self.possible_pivot_size = 37
+
+        self.obs_buf = (np.zeros(core.combined_shape(size, obs_dim), dtype=np.float32),np.zeros(core.combined_shape(size, self.possible_pivot_size), dtype=np.float32)) \
+                if self.do_simplex else np.zeros(core.combined_shape(size, obs_dim), dtype=np.float32)
         self.act_buf = np.zeros(core.combined_shape(size, act_dim), dtype=np.float32)
         self.adv_buf = np.zeros(size, dtype=np.float32)
         self.rew_buf = np.zeros(size, dtype=np.float32)
@@ -33,8 +37,12 @@ class PPOBuffer:
         """
         assert self.ptr < self.max_size     # buffer has to have room so you can store
         # import pdb; pdb.set_trace()
-        self.obs_buf[0][self.ptr] = obs[0]
-        self.obs_buf[1][self.ptr] = obs[1]
+        if self.do_simplex:
+            self.obs_buf[0][self.ptr] = obs[0]
+            self.obs_buf[1][self.ptr] = obs[1]
+        else:
+            self.obs_buf[self.ptr] = obs
+
         self.act_buf[self.ptr] = act
         self.rew_buf[self.ptr] = rew
         self.val_buf[self.ptr] = val
@@ -90,7 +98,7 @@ class PPOBuffer:
 def ppo(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0, 
         steps_per_epoch=4000, epochs=50, gamma=0.99, clip_ratio=0.2, pi_lr=3e-4,
         vf_lr=1e-3, train_pi_iters=80, train_v_iters=80, lam=0.97, max_ep_len=1000,
-        target_kl=0.01, logger_kwargs=dict(), save_freq=10, simplex_data="/test"):
+        target_kl=0.01, logger_kwargs=dict(), save_freq=10, simplex_data="/test", do_simplex=False):
     """
     Proximal Policy Optimization (by clipping), 
 
@@ -207,12 +215,19 @@ def ppo(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
     np.random.seed(seed)
 
     # Instantiate environment
-    env = env_fn(simplex_data)
-    obs_dim = env.observation_space.n
-    act_dim = env.action_space.n
+
+    if do_simplex:
+        env = env_fn(simplex_data)
+        obs_dim = env.observation_space.n
+        act_dim = env.action_space.n
+    else:
+        env = env_fn()
+        obs_dim = env.observation_space.shape
+        act_dim = env.action_space.shape
+
 
     # Create actor-critic module
-    ac = actor_critic(env.observation_space, env.action_space, **ac_kwargs)
+    ac = actor_critic(env.observation_space, env.action_space, do_simplex=do_simplex, **ac_kwargs)
 
     # Sync params across processes
     sync_params(ac)
@@ -299,7 +314,7 @@ def ppo(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
     # Main loop: collect experience in env and update/log each epoch
     for epoch in range(epochs):
         for t in range(local_steps_per_epoch):
-            a, v, logp = ac.step(torch.as_tensor(o[0], dtype=torch.float32), torch.as_tensor(o[1], dtype=torch.bool))
+            a, v, logp = ac.step(torch.as_tensor(o[0] if do_simplex else o, dtype=torch.float32), torch.as_tensor(o[1], dtype=torch.bool) if do_simplex else None)
 
             next_o, r, d, _ = env.step(a)
             ep_ret += r
@@ -321,7 +336,7 @@ def ppo(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
                     print('Warning: trajectory cut off by epoch at %d steps.'%ep_len, flush=True)
                 # if trajectory didn't reach terminal state, bootstrap value target
                 if timeout or epoch_ended:
-                    _, v, _ = ac.step(torch.as_tensor(o[0], dtype=torch.float32), torch.as_tensor(o[1], dtype=torch.bool))
+                    _, v, _ = ac.step(torch.as_tensor(o[0] if do_simplex else o, dtype=torch.float32), torch.as_tensor(o[1], dtype=torch.bool) if do_simplex else None)
                 else:
                     v = 0
                 buf.finish_path(v)

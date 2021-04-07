@@ -33,7 +33,8 @@ class SimplexGym(gym.Env):
         barr = np.array(data['b'])
         carr = np.array(data['c'])
 
-        num_vertices = int(data_dir.split("_")[-2].split("/")[-1])
+        # num_vertices = int(data_dir.split("_")[-2].split("/")[-1])
+        num_vertices = 4
 
         m = num_vertices**2+num_vertices+2
         n = num_vertices**2
@@ -72,20 +73,25 @@ class SimplexGym(gym.Env):
         info = {}
 
         if done:
-            print("NUM STEPS: ", self.solver.num_steps)
-            print("OBJ VAL: ", round(tableau[-1][-1].numerator / tableau[-1][-1].denominator, 2))
-            print("SCIPY VAL: ", round(self.res_val, 2))
+            # print("NUM STEPS: ", self.solver.num_steps)
+            # print("OBJ VAL: ", round(tableau[-1][-1], 2))
+            # print("SCIPY VAL: ", round(self.res_val, 2))
 
-            if abs(self.res_val - tableau[-1][-1].numerator / tableau[-1][-1].denominator) > 1e-3:
+            print("DOOOONNNEEE")
+
+            if abs(self.res_val - tableau[-1][-1]) > 1e-3:
+                print(self.idx)
+                print(abs(self.res_val - tableau[-1][-1]))
                 print("ERRORR")
 
         return (self.tab_to_obs(tableau), reward, done, info)
 
     def reset(self):
         self.idx += 1
+        # self.idx = 80
 
-        # if (self.idx == 8 or self.idx == 16 or self.idx == 17):
-        #     self.data_index += 1
+        # if (self.idx == 11):
+        #     self.data_index += 2
 
         self.solver = SimplexSolver()
 
@@ -99,17 +105,27 @@ class SimplexGym(gym.Env):
         with open(fname, "rb") as file:
             data = pickle.load(file)
         
-        print("="*100)
-        print(fname)
-        print(self.idx)
+        # print("="*100)
+        # print(fname)
+        # print(self.idx)
         
         A = data["A"]
         b = data["b"]
         c = data["c"]
         prob = data["prob"]
 
+        print(fname)
+        print(self.idx)
+
 
         res = linprog(c=c, A_ub=A, b_ub=b, method="simplex")
+
+        # print(res)
+        # import pdb; pdb.set_trace()
+
+        if res['status'] != 0:
+            print("SCIPY FAILED")
+
         self.res_val = res['fun']
 
         A = [[x*-1 for x in row] for row in data["A"]]

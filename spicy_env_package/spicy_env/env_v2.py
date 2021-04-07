@@ -58,7 +58,7 @@ class SpicyGym(gym.Env):
         ma = np.ma.masked_where(T[-1, :-1] >= -tol, T[-1, :-1], copy=False)
         
         # 1 if valid pivot choice, 0 if should be ignored
-        mult_by_valid = 1 - ma.mask
+        mult_by_valid = 1 - np.getmask(ma)
 
         return (T, mult_by_valid)
 
@@ -447,26 +447,26 @@ class SpicyGym(gym.Env):
                     status = 3
                     complete = True
 
-            if callback is not None:
-                solution[:] = 0
-                solution[basis[:n]] = T[:n, -1]
-                x = solution[:m]
-                x, fun, slack, con = _postsolve(
-                    x, postsolve_args
-                )
-                res = OptimizeResult({
-                    'x': x,
-                    'fun': fun,
-                    'slack': slack,
-                    'con': con,
-                    'status': status,
-                    'message': message,
-                    'nit': nit,
-                    'success': status == 0 and complete,
-                    'phase': phase,
-                    'complete': complete,
-                    })
-                callback(res)
+            # if callback is not None:
+            #     solution[:] = 0
+            #     solution[basis[:n]] = T[:n, -1]
+            #     x = solution[:m]
+            #     x, fun, slack, con = _postsolve(
+            #         x, postsolve_args
+            #     )
+            #     res = OptimizeResult({
+            #         'x': x,
+            #         'fun': fun,
+            #         'slack': slack,
+            #         'con': con,
+            #         'status': status,
+            #         'message': message,
+            #         'nit': nit,
+            #         'success': status == 0 and complete,
+            #         'phase': phase,
+            #         'complete': complete,
+            #         })
+            #     callback(res)
 
             if not complete:
                 if nit >= maxiter:
@@ -478,5 +478,3 @@ class SpicyGym(gym.Env):
                     nit += 1
         
         # return nit, status
-
-
