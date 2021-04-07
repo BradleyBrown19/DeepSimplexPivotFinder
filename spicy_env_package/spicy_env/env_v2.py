@@ -1,3 +1,12 @@
+"""
+Modified from Scipy repo:
+
+https://github.com/scipy/scipy/blob/20642e52fb3b158d41e4f7fea0c800ffd42b6955/scipy/optimize/_linprog.py
+https://github.com/scipy/scipy/blob/20642e52fb3b158d41e4f7fea0c800ffd42b6955/scipy/optimize/_linprog_simplex.py
+
+"""
+
+
 import numpy as np
 import gym
 from pathlib import Path
