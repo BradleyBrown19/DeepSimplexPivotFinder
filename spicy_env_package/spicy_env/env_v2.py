@@ -103,11 +103,15 @@ class SpicyGym(gym.Env):
         return (state, done, reward, info)
 
 
-    def simplex_generator(self, c, A_ub=None, b_ub=None, A_eq=None, b_eq=None, bounds=None):
+    def simplex_generator(self, c, A_ub=None, b_ub=None, A_eq=None, b_eq=None,
+            bounds=None, method='interior-point', callback=None,
+            options=None, x0=None):
         
         lp = _LPProblem(c, A_ub, b_ub, A_eq, b_eq, bounds, x0)
         c0 = 0
         A, b, c, c0, x0 = _get_Abc(lp, c0)
+
+        messages = {}
 
         callback = None
         bland = False
@@ -374,26 +378,26 @@ class SpicyGym(gym.Env):
                     status = 3
                     complete = True
 
-            if callback is not None:
-                solution[:] = 0
-                solution[basis[:n]] = T[:n, -1]
-                x = solution[:m]
-                x, fun, slack, con = _postsolve(
-                    x, postsolve_args
-                )
-                res = OptimizeResult({
-                    'x': x,
-                    'fun': fun,
-                    'slack': slack,
-                    'con': con,
-                    'status': status,
-                    'message': message,
-                    'nit': nit,
-                    'success': status == 0 and complete,
-                    'phase': phase,
-                    'complete': complete,
-                    })
-                callback(res)
+            # if callback is not None:
+            #     solution[:] = 0
+            #     solution[basis[:n]] = T[:n, -1]
+            #     x = solution[:m]
+            #     x, fun, slack, con = _postsolve(
+            #         x, postsolve_args
+            #     )
+            #     res = OptimizeResult({
+            #         'x': x,
+            #         'fun': fun,
+            #         'slack': slack,
+            #         'con': con,
+            #         'status': status,
+            #         'message': message,
+            #         'nit': nit,
+            #         'success': status == 0 and complete,
+            #         'phase': phase,
+            #         'complete': complete,
+            #         })
+            #     callback(res)
 
             if not complete:
                 if nit >= maxiter:
