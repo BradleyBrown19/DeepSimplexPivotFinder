@@ -11,6 +11,7 @@ import numpy as np
 import gym
 from pathlib import Path
 import pickle
+from gym import spaces
 from copy import deepcopy
 from collections import namedtuple
 
@@ -18,8 +19,8 @@ _LPProblem = namedtuple('_LPProblem', 'c A_ub b_ub A_eq b_eq bounds x0')
 
 
 class SpicyGym(gym.Env):
-    def __init__(self):
-        self.data_dir = None
+    def __init__(self, data_dir):
+        self.data_dir = data_dir
         self.data_files = []
         self.data_index = 0
         self.generator = None
@@ -27,11 +28,31 @@ class SpicyGym(gym.Env):
         self.next = None
         self.output = None
         self.pivot = None
+        self.load_data(data_dir)
+
+        fname = self.data_dir / self.data_files[self.data_index]
+        print(fname)
+        self.data_index = (self.data_index + 1) % len(self.data_files)
+
+        with open(fname, "rb") as file:
+            data = pickle.load(file)
+
+        Aarr = np.array(data['A'])
+        barr = np.array(data['b'])
+        carr = np.array(data['c'])
+
+        num_vertices = int(data_dir.split("_")[-2].split("/")[-1])
+
+        m = num_vertices**2+num_vertices+2
+        n = num_vertices**2
+
+        self.action_space = spaces.Discrete(n-1+m)
+        self.observation_space = spaces.Discrete((m+n)*n)
 
 
     def load_data(self, data_dir):
         self.data_dir = Path(data_dir)
-        self.data_files = list(data_dir.glob("*"))
+        self.data_files = list(self.data_dir.glob("*"))
 
 
     def scipy_to_brad(self, state):
@@ -43,8 +64,6 @@ class SpicyGym(gym.Env):
 
         return (T, mult_by_valid)
 
-
-
     def reset(self):
         fname = self.data_dir / self.data_files[self.data_index]
         self.data_index = (self.data_index + 1) % len(self.data_files)
@@ -52,13 +71,11 @@ class SpicyGym(gym.Env):
         with open(fname, "rb") as file:
             data = pickle.load(file)
         
-        A_ub = data["A_ub"]
-        b_ub = data["b_ub"]
+        A_ub = data["A"]
+        b_ub = data["b"]
         c = data["c"]
-        A_eq = data["A_eq"]
-        b_eq = data["b_eq"]
         
-        self.generator = self.simplex_generator(c, A_ub, b_ub, A_eq, b_eq)
+        self.generator = self.simplex_generator(c, A_ub, b_ub, None, None)
         self.done = False
         self.pivot = None
 
