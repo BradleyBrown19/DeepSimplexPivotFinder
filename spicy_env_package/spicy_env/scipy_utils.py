@@ -1440,7 +1440,7 @@ def _autoscale(A, b, c, x0):
     return A, b, c, x0, C, b_scale
 
 
-    def _postsolve(x, postsolve_args, complete=False):
+def _postsolve(x, postsolve_args, complete=False):
     """
     Given solution x to presolved, standard form linear program x, add
     fixed variables back into the problem and undo the variable substitutions
