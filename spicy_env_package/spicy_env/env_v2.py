@@ -60,7 +60,7 @@ class SpicyGym(gym.Env):
         ma = np.ma.masked_where(T[-1, :-1] >= -tol, T[-1, :-1], copy=False)
         
         # 1 if valid pivot choice, 0 if should be ignored
-        mult_by_valid = 1 - ma.mask
+        mult_by_valid = 1 - np.getmask(ma)
 
         return (T, mult_by_valid)
 
@@ -769,7 +769,7 @@ def _linprog_simplex(c, c0, A, b, callback, postsolve_args,
     non-negative slack variables for inequality constraints, and expressing
     unbounded variables as the difference between two non-negative variables.
     """
-    _check_unknown_options(unknown_options)
+    # _check_unknown_options(unknown_options)
 
     status = 0
     messages = {0: "Optimization terminated successfully.",
