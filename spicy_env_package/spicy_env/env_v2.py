@@ -340,11 +340,7 @@ class SpicyGym(gym.Env):
 
         while not complete:
             # Find the pivot column
-            # pivcol_found, pivcol = _pivot_col(T, tol, bland)
-
-            yield (T, tol, bland)
-            pivcol_found, pivcol = self.pivot
-
+            pivcol_found, pivcol = _pivot_col(T, tol, bland)
 
             if not pivcol_found:
                 pivcol = np.nan
@@ -352,6 +348,11 @@ class SpicyGym(gym.Env):
                 status = 0
                 complete = True
             else:
+
+                # ADDED BY US: IGNORE the default pivot chosen and select our own
+                yield (T, tol, bland)
+                pivcol = self.pivot
+
                 # Find the pivot row
                 pivrow_found, pivrow = _pivot_row(T, basis, pivcol, phase, tol, bland)
                 if not pivrow_found:
