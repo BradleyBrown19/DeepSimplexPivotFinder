@@ -22,7 +22,7 @@ class PPOBuffer:
 
         self.obs_buf = (np.zeros(core.combined_shape(size, obs_dim), dtype=np.float32),np.zeros(core.combined_shape(size, self.possible_pivot_size), dtype=np.float32)) \
                 if self.do_simplex else np.zeros(core.combined_shape(size, obs_dim), dtype=np.float32)
-        self.act_buf = np.zeros(core.combined_shape(size, act_dim), dtype=np.float32)
+        self.act_buf = np.zeros(core.combined_shape(size, 1), dtype=np.float32)
         self.adv_buf = np.zeros(size, dtype=np.float32)
         self.rew_buf = np.zeros(size, dtype=np.float32)
         self.ret_buf = np.zeros(size, dtype=np.float32)
@@ -91,7 +91,7 @@ class PPOBuffer:
         self.adv_buf = (self.adv_buf - adv_mean) / adv_std
         data = dict(obs=self.obs_buf, act=self.act_buf, ret=self.ret_buf,
                     adv=self.adv_buf, logp=self.logp_buf)
-        return {k: torch.as_tensor(v, dtype=torch.float32) for k,v in data.items()}
+        return {k: torch.as_tensor(v[0] if k=='obs' and self.do_simplex else v, dtype=torch.float32) for k,v in data.items()}
 
 
 
@@ -238,7 +238,7 @@ def ppo(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
 
     # Set up experience buffer
     local_steps_per_epoch = int(steps_per_epoch / num_procs())
-    buf = PPOBuffer(obs_dim, act_dim, local_steps_per_epoch, gamma, lam)
+    buf = PPOBuffer(obs_dim, act_dim, local_steps_per_epoch, gamma, lam, do_simplex=do_simplex)
 
     # Set up function for computing PPO policy loss
     def compute_loss_pi(data):

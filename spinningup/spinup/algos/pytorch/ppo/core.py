@@ -79,6 +79,7 @@ class MLPCategoricalActor(Actor):
         return Categorical(logits=logits)
 
     def _log_prob_from_distribution(self, pi, act):
+        # import pdb; pdb.set_trace()
         return pi.log_prob(act)
 
 

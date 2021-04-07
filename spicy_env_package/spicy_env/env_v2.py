@@ -15,10 +15,19 @@ from gym import spaces
 from copy import deepcopy
 from collections import namedtuple
 import scipy.sparse as sps
+import sys
+sys.path.append('/Users/bradleybrown/Desktop/Waterloo/Courses/3A/CO255/DeepSimplexPivotFinder/spicy_env_package/spicy_env')
 
-from .scipy_utils import *
+from scipy_utils import *
+import scipy_utils
 
-_LPProblem = namedtuple('_LPProblem', 'c A_ub b_ub A_eq b_eq bounds x0')
+messages = {0: "Optimization terminated successfully.",
+                1: "Iteration limit reached.",
+                2: "Optimization failed. Unable to find a feasible"
+                   " starting point.",
+                3: "Optimization failed. The problem appears to be unbounded.",
+                4: "Optimization failed. Singular matrix encountered."}
+
 
 class SpicyGym(gym.Env):
     def __init__(self, data_dir):
@@ -31,7 +40,6 @@ class SpicyGym(gym.Env):
         self.load_data(data_dir)
 
         fname = self.data_dir / self.data_files[self.data_index]
-        print(fname)
         self.data_index = (self.data_index + 1) % len(self.data_files)
 
         with open(fname, "rb") as file:
@@ -47,7 +55,7 @@ class SpicyGym(gym.Env):
         n = num_vertices**2
 
         self.action_space = spaces.Discrete(n-1+m)
-        self.observation_space = spaces.Discrete((m+n)*n)
+        self.observation_space = spaces.Discrete((m+1)*(m+n))
 
 
     def load_data(self, data_dir):
@@ -60,9 +68,9 @@ class SpicyGym(gym.Env):
         ma = np.ma.masked_where(T[-1, :-1] >= -tol, T[-1, :-1], copy=False)
         
         # 1 if valid pivot choice, 0 if should be ignored
-        mult_by_valid = 1 - np.getmask(ma)
+        mult_by_valid = ma.mask
 
-        return (T, mult_by_valid)
+        return (T.flatten(), mult_by_valid)
 
     def reset(self):
         fname = self.data_dir / self.data_files[self.data_index]
@@ -100,16 +108,21 @@ class SpicyGym(gym.Env):
         reward = -1
         info = {}
 
-        state = self.scipy_to_brad(state)
+        if not done:
+            state = self.scipy_to_brad(state)
+        else:
+            state = None
 
-        return (state, done, reward, info)
+        return (state, reward, done, info)
+    
 
 
-    def simplex_generator(self, c, A_ub=None, b_ub=None, A_eq=None, b_eq=None, bounds=None, options=None, x0=None):
+    def simplex_generator(self, c, A_ub=None, b_ub=None, A_eq=None, b_eq=None, bounds=None, options=None, 
+                            x0=None, maxiter=1000, bland=False):
         
         meth = "simplex"
         callback = None
-        
+          
         ### From linprog() in _linprog.py
 
         lp = _LPProblem(c, A_ub, b_ub, A_eq, b_eq, bounds, x0)
@@ -145,7 +158,7 @@ class SpicyGym(gym.Env):
         rr = solver_options.pop('rr', True)  # they're not passed to methods
         c0 = 0  # we might get a constant term in the objective
         if solver_options.pop('presolve', True):
-            (lp, c0, x, undo, complete, status, message) = _presolve(lp, rr,
+            (lp, c0, x, undo, complete, status, message) = scipy_utils._presolve(lp, rr,
                                                                     rr_method,
                                                                     tol)
 
@@ -153,9 +166,9 @@ class SpicyGym(gym.Env):
         postsolve_args = (lp_o._replace(bounds=lp.bounds), undo, C, b_scale)
             
         if complete:
-            x, fun, slack, con = _postsolve(x, postsolve_args, complete)
+            x, fun, slack, con = scipy_utils._postsolve(x, postsolve_args, complete)
 
-            status, message = _check_result(x, fun, status, slack, con, lp_o.bounds, tol, message)
+            status, message = scipy_utils._check_result(x, fun, status, slack, con, lp_o.bounds, tol, message)
 
             sol = {
                 'x': x,
@@ -171,21 +184,21 @@ class SpicyGym(gym.Env):
             return
 
         if not complete:
-            A, b, c, c0, x0 = _get_Abc(lp, c0)
+            A, b, c, c0, x0 = scipy_utils._get_Abc(lp, c0)
             if solver_options.pop('autoscale', False):
-                A, b, c, x0, C, b_scale = _autoscale(A, b, c, x0)
+                A, b, c, x0, C, b_scale = scipy_utils._autoscale(A, b, c, x0)
                 postsolve_args = postsolve_args[:-2] + (C, b_scale)
 
             if meth == 'simplex':
-                x, status, message, iteration = _linprog_simplex(
+                x, status, message, iteration = scipy_utils._linprog_simplex(
                     c, c0=c0, A=A, b=b, callback=callback,
                     postsolve_args=postsolve_args, **solver_options)
             elif meth == 'interior-point':
-                x, status, message, iteration = _linprog_ip(
+                x, status, message, iteration = scipy_utils._linprog_ip(
                     c, c0=c0, A=A, b=b, callback=callback,
                     postsolve_args=postsolve_args, **solver_options)
             elif meth == 'revised simplex':
-                x, status, message, iteration = _linprog_rs(
+                x, status, message, iteration =scipy_utils. _linprog_rs(
                     c, c0=c0, A=A, b=b, x0=x0, callback=callback,
                     postsolve_args=postsolve_args, **solver_options)
 
@@ -218,7 +231,7 @@ class SpicyGym(gym.Env):
         row_pseudo_objective[av] = 0
         T = np.vstack((row_constraints, row_objective, row_pseudo_objective))
 
-        nit1, status = _solve_simplex(T, n, basis, callback=callback,
+        nit1, status = scipy_utils._solve_simplex(T, n, basis, callback=callback,
                                     postsolve_args=postsolve_args,
                                     maxiter=maxiter, tol=tol, phase=1,
                                     bland=bland
@@ -419,7 +432,7 @@ class SpicyGym(gym.Env):
                                 if abs(T[pivrow, col]) > tol]
                 if len(non_zero_row) > 0:
                     pivcol = non_zero_row[0]
-                    _apply_pivot(T, basis, pivrow, pivcol, tol)
+                    scipy_utils._apply_pivot(T, basis, pivrow, pivcol, tol)
                     nit += 1
 
         if len(basis[:m]) == 0:
@@ -430,8 +443,8 @@ class SpicyGym(gym.Env):
 
         while not complete:
             # Find the pivot column
-            pivcol_found, pivcol = _pivot_col(T, tol, bland)
-
+            pivcol_found, pivcol = scipy_utils._pivot_col(T, tol, bland)
+            # import pdb; pdb.set_trace()
             if not pivcol_found:
                 pivcol = np.nan
                 pivrow = np.nan
@@ -444,7 +457,7 @@ class SpicyGym(gym.Env):
                 pivcol = self.pivot
 
                 # Find the pivot row
-                pivrow_found, pivrow = _pivot_row(T, basis, pivcol, phase, tol, bland)
+                pivrow_found, pivrow = scipy_utils._pivot_row(T, basis, pivcol, phase, tol, bland)
                 if not pivrow_found:
                     status = 3
                     complete = True
@@ -476,7 +489,7 @@ class SpicyGym(gym.Env):
                     status = 1
                     complete = True
                 else:
-                    _apply_pivot(T, basis, pivrow, pivcol, tol)
+                    scipy_utils._apply_pivot(T, basis, pivrow, pivcol, tol)
                     nit += 1
         
         # return nit, status
