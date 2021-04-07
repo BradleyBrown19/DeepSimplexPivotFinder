@@ -82,7 +82,6 @@ def parse_and_execute_grid_search(cmd, args):
             arg_dict[arg_key] = []
         else:
             arg_dict[arg_key].append(process(arg))
-
     # Make second pass through, to catch flags that have no vals.
     # Assume such flags indicate that a boolean parameter should have
     # value True.
@@ -170,7 +169,6 @@ def parse_and_execute_grid_search(cmd, args):
 
             """%env_name)
         assert env_name in valid_envs, err_msg
-
 
     # Construct and execute the experiment grid.
     eg = ExperimentGrid(name=exp_name)

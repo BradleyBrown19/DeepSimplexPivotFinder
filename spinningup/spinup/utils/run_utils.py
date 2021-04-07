@@ -153,7 +153,16 @@ def call_experiment(exp_name, thunk, seed=0, num_cpu=1, data_dir=None,
             import gym
             env_name = kwargs['env_name']
             kwargs['env_fn'] = lambda : gym.make(env_name)
+            print(env_name)
             del kwargs['env_name']
+        
+        # import pdb; pdb.set_trace()
+        if 'simplex' in kwargs:
+            if kwargs['simplex']:
+                import gym
+                assert 'simplex_data' in kwargs
+                kwargs['env_fn'] = lambda x : gym.make("simplex_env:simplex-v0", data_dir=x)
+                del kwargs['simplex']
 
         # Fork into multiple processes
         mpi_fork(num_cpu)
@@ -527,7 +536,6 @@ class ExperimentGrid:
             for _ in prog_bar:
                 time.sleep(wait/steps)
 
-        import pdb; pdb.set_trace()
         # Run the variants.
         for var in variants:
             exp_name = self.variant_name(var)
