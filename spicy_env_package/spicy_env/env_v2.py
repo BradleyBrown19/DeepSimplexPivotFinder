@@ -14,6 +14,8 @@ import pickle
 from gym import spaces
 from copy import deepcopy
 from collections import namedtuple
+import scipy.sparse as sps
+
 
 _LPProblem = namedtuple('_LPProblem', 'c A_ub b_ub A_eq b_eq bounds x0')
 
