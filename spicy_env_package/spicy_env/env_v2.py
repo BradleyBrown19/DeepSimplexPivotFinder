@@ -24,8 +24,6 @@ class SpicyGym(gym.Env):
         self.data_files = []
         self.data_index = 0
         self.generator = None
-        self.done = False
-        self.next = None
         self.output = None
         self.pivot = None
         self.load_data(data_dir)
@@ -105,7 +103,7 @@ class SpicyGym(gym.Env):
         return (state, done, reward, info)
 
 
-    def simplex_generator(self, c, A_ub=None, b_ub=None, A_eq=None, b_eq=None):
+    def simplex_generator(self, c, A_ub=None, b_ub=None, A_eq=None, b_eq=None, bounds=None):
         
         lp = _LPProblem(c, A_ub, b_ub, A_eq, b_eq, bounds, x0)
         c0 = 0
