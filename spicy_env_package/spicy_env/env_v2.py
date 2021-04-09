@@ -16,6 +16,8 @@ from copy import deepcopy
 from collections import namedtuple
 import scipy.sparse as sps
 import sys
+import copy
+# from pandas import *
 sys.path.append('/Users/bradleybrown/Desktop/Waterloo/Courses/3A/CO255/DeepSimplexPivotFinder/spicy_env_package/spicy_env')
 
 from scipy_utils import *
@@ -65,12 +67,14 @@ class SpicyGym(gym.Env):
 
     def scipy_to_brad(self, state):
         T, tol, bland = state
-        ma = np.ma.masked_where(T[-1, :-1] >= -tol, T[-1, :-1], copy=False)
+        ma = np.ma.masked_where(T[-1, :-1] >= -tol, T[-1, :-1], copy=True)
         
-        # 1 if valid pivot choice, 0 if should be ignored
+        # non negative is true, else false 
         mult_by_valid = ma.mask
 
-        return (T.flatten(), mult_by_valid)
+        # print (DataFrame( [[round(r,2) for r in row] for row in T] ))
+
+        return (copy.deepcopy(T).flatten(), mult_by_valid)
 
     def reset(self):
         fname = self.data_dir / self.data_files[self.data_index]
@@ -109,8 +113,10 @@ class SpicyGym(gym.Env):
         info = {}
 
         if not done:
+            # print("Obj val: ", round(state[0][-1][-1],2))
             state = self.scipy_to_brad(state)
         else:
+            # print("="*200)
             state = None
 
         return (state, reward, done, info)

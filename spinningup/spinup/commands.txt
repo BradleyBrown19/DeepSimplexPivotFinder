@@ -1,2 +1,8 @@
 python -m spinup.run ppo --env Walker2d-v2 --exp_name euc_4 --simplex True --simplex_data /Users/bradleybrown/Desktop/Waterloo/Courses/3A/CO255/DeepSimplexPivotFinder/data_generation/data/4_euclid/
+
+
+# Cart Pole
 python -m spinup.run ppo --env CartPole-v1 --exp_name CartTest
+
+
+python -m spinup.run ppo --env Walker2d-v2 --exp_name euc_4_lowerlr --simplex True --simplex_data /Users/bradleybrown/Desktop/Waterloo/Courses/3A/CO255/DeepSimplexPivotFinder/data_generation/data/4_euclid/ --pi_lr 1e-5 --vf_lr 1e-5
