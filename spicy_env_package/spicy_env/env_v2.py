@@ -5,7 +5,7 @@ https://github.com/scipy/scipy/blob/20642e52fb3b158d41e4f7fea0c800ffd42b6955/sci
 https://github.com/scipy/scipy/blob/20642e52fb3b158d41e4f7fea0c800ffd42b6955/scipy/optimize/_linprog_simplex.py
 
 """
-
+print('HERE')
 
 import numpy as np
 import gym
@@ -18,10 +18,10 @@ import scipy.sparse as sps
 import sys
 import copy
 # from pandas import *
-sys.path.append('/Users/jacklu/Documents/GitHub/DeepSimplexPivotFinder/spicy_env_package/spicy_env')
+# sys.path.append('/Users/jacklu/Documents/GitHub/DeepSimplexPivotFinder/spicy_env_package/spicy_env')
 
-from scipy_utils import *
-import scipy_utils
+from spicy_env.scipy_utils import *
+from spicy_env import scipy_utils
 
 messages = {0: "Optimization terminated successfully.",
                 1: "Iteration limit reached.",
@@ -71,9 +71,9 @@ def steepest_edge_rule(state):
         column_norm = norm(tableau[:-1, i])
         scores[i] = raw_cost / column_norm
     
-    index =  np.argmin(scores)
+    index = np.argmin(scores)
 
-    assert index[scores] < -tol, "AnGErY - no valid pivot exists"
+    assert scores[index] < -tol, "AnGErY - no valid pivot exists"
     return index
 
 
@@ -81,7 +81,8 @@ HEURISTICS = [dantzigs_rule, steepest_edge_rule]
 
 
 class SpicyGym(gym.Env):
-    def __init__(self, data_dir, direct_column_selection = True):
+    def __init__(self, data_dir, direct_column_selection = True, bradify_state = True):
+        self.bradify_state = bradify_state
         self.direct_column_selection = direct_column_selection
         self.data_dir = data_dir
         self.cur_state = None
@@ -150,8 +151,10 @@ class SpicyGym(gym.Env):
         except StopIteration:
             raise Exception("Generator terminated without producing any elements - maybe did everything in phase 1?")
 
-        return self.scipy_to_brad(state)
+        if self.bradify_state:
+            state = self.scipy_to_brad(state)
 
+        return state 
 
     def step(self, action):
 
@@ -175,7 +178,8 @@ class SpicyGym(gym.Env):
         info = {}
 
         if not done:
-            state = self.scipy_to_brad(state)
+            if self.bradify_state:
+                state = self.scipy_to_brad(state)
         else:
             state = None
 
