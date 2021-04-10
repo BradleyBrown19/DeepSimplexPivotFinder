@@ -89,14 +89,14 @@ class PPOBuffer:
         # the next two lines implement the advantage normalization trick
         adv_mean, adv_std = mpi_statistics_scalar(self.adv_buf)
         self.adv_buf = (self.adv_buf - adv_mean) / adv_std
-        data = dict(obs=self.obs_buf, act=self.act_buf, ret=self.ret_buf,
+        data = dict(obs=self.obs_buf[0], cands=self.obs_buf[1], act=self.act_buf, ret=self.ret_buf,
                     adv=self.adv_buf, logp=self.logp_buf)
-        return {k: torch.as_tensor(v[0] if k=='obs' and self.do_simplex else v, dtype=torch.float32) for k,v in data.items()}
+        return {k: torch.as_tensor(v, dtype=torch.float32) for k,v in data.items()}
 
 
 
 def ppo(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0, 
-        steps_per_epoch=4000, epochs=50, gamma=0.99, clip_ratio=0.2, pi_lr=3e-4,
+        steps_per_epoch=4000, epochs=100, gamma=0.99, clip_ratio=0.2, pi_lr=3e-4,
         vf_lr=1e-3, train_pi_iters=80, train_v_iters=80, lam=0.97, max_ep_len=1000,
         target_kl=0.01, logger_kwargs=dict(), save_freq=10, simplex_data="/test", do_simplex=False):
     """
@@ -242,10 +242,17 @@ def ppo(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
 
     # Set up function for computing PPO policy loss
     def compute_loss_pi(data):
-        obs, act, adv, logp_old = data['obs'], data['act'], data['adv'], data['logp']
+        obs, cands, act, adv, logp_old = data['obs'], data['cands'], data['act'], data['adv'], data['logp']
 
-        # Policy loss
-        pi, logp = ac.pi(obs, act)
+        # Sanity Check
+        # for i in range(obs.shape[0]):
+        #     obj_T = obs[i].reshape(23,38)[-1]
+        #     valid_idxs = np.where(obj_T < 0)[0]
+        #     assert (np.abs(valid_idxs - np.array(act[i])) < 1e-3).sum() > 0
+        # import pdb; pdb.set_trace()
+
+        # Policy Loss
+        pi, logp = ac.pi(obs, candidates=cands, act=act)
         ratio = torch.exp(logp - logp_old)
         clip_adv = torch.clamp(ratio, 1-clip_ratio, 1+clip_ratio) * adv
         loss_pi = -(torch.min(ratio * adv, clip_adv)).mean()
@@ -335,10 +342,11 @@ def ppo(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
                 if epoch_ended and not(terminal):
                     print('Warning: trajectory cut off by epoch at %d steps.'%ep_len, flush=True)
                 # if trajectory didn't reach terminal state, bootstrap value target
-                if timeout or epoch_ended:
-                    _, v, _ = ac.step(torch.as_tensor(o[0] if do_simplex else o, dtype=torch.float32), torch.as_tensor(o[1], dtype=torch.bool) if do_simplex else None)
-                else:
-                    v = 0
+                # if timeout or epoch_ended:
+                #     # v = -1
+                #     # _, v, _ = ac.step(torch.as_tensor(o[0] if do_simplex else o, dtype=torch.float32), torch.as_tensor(o[1], dtype=torch.bool) if do_simplex else None)
+                # else:
+                #     v = 0
                 buf.finish_path(v)
                 if terminal:
                     # only save EpRet / EpLen if trajectory finished
@@ -383,8 +391,6 @@ if __name__ == '__main__':
     parser.add_argument('--epochs', type=int, default=50)
     parser.add_argument('--exp_name', type=str, default='ppo')
     args = parser.parse_args()
-
-    import pdb; pdb.set_trace()
 
     mpi_fork(args.cpu)  # run parallel code with mpi
 

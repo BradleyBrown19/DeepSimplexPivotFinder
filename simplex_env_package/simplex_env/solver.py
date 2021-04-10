@@ -54,7 +54,7 @@ class SimplexSolver():
         #     print("ENTERING INDEX: ", enter_index)
         #     print("DEPARTING INDEX: ", depart_index)
 
-        #     print (DataFrame( [[round(r.numerator/r.denominator,2) for r in row] for row in self.tableau] ))
+            # print (DataFrame( [[round(r.numerator/r.denominator,2) for r in row] for row in self.tableau] ))
 
         pivot = [enter_index, depart_index]
 

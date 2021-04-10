@@ -53,11 +53,11 @@ class Actor(nn.Module):
     def _log_prob_from_distribution(self, pi, act):
         raise NotImplementedError
 
-    def forward(self, obs, act=None):
+    def forward(self, obs, candidates=None, act=None):
         # Produce action distributions for given observations, and 
         # optionally compute the log likelihood of given actions under
         # those distributions.
-        pi = self._distribution(obs)
+        pi = self._distribution(obs, candidates)
         logp_a = None
         if act is not None:
             logp_a = self._log_prob_from_distribution(pi, act)
@@ -79,7 +79,6 @@ class MLPCategoricalActor(Actor):
         return Categorical(logits=logits)
 
     def _log_prob_from_distribution(self, pi, act):
-        # import pdb; pdb.set_trace()
         return pi.log_prob(act)
 
 
@@ -141,6 +140,7 @@ class MLPActorCritic(nn.Module):
             a = pi.sample()
             logp_a = self.pi._log_prob_from_distribution(pi, a)
             v = self.v(obs)
+            
         return a.numpy(), v.numpy(), logp_a.numpy()
 
     def act(self, obs):
