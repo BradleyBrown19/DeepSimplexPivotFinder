@@ -18,7 +18,7 @@ class PPOBuffer:
 
     def __init__(self, obs_dim, act_dim, size, gamma=0.99, lam=0.95, do_simplex=False):
         self.do_simplex = do_simplex
-        self.possible_pivot_size = 37
+        self.possible_pivot_size = 79
 
         self.obs_buf = (np.zeros(core.combined_shape(size, obs_dim), dtype=np.float32),np.zeros(core.combined_shape(size, self.possible_pivot_size), dtype=np.float32)) \
                 if self.do_simplex else np.zeros(core.combined_shape(size, obs_dim), dtype=np.float32)
@@ -249,13 +249,7 @@ def ppo(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
         #     obj_T = obs[i].reshape(23,38)[-1]
         #     valid_idxs = np.where(obj_T < 0)[0]
         #     assert (np.abs(valid_idxs - np.array(act[i])) < 1e-3).sum() > 0
-        # import pdb; pdb.set_trace()
 
-        # import pdb; pdb.set_trace()
-
-        # Policy Loss
-        # print("Before policy inference")
-        # import pdb; pdb.set_trace()
         pi, logp = ac.pi(obs, candidates=cands, act=act)
         ratio = torch.exp(logp - logp_old)
         clip_adv = torch.clamp(ratio, 1-clip_ratio, 1+clip_ratio) * adv
@@ -301,13 +295,6 @@ def ppo(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
                 logger.log('Early stopping at step %d due to reaching max kl.'%i)
                 break
             loss_pi.backward()
-            layers = [m for m in ac.pi.children()]
-            lay = [m for m in layers[0].children()]
-            # print("="*100)
-            # print((lay[0].weight.grad.mean()))
-            # print((lay[2].weight.grad.mean()))
-            # print((lay[4].weight.grad.mean()))
-            # import pdb; pdb.set_trace()
             mpi_avg_grads(ac.pi)    # average grads across MPI processes
             pi_optimizer.step()
 
