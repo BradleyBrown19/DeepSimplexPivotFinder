@@ -7,7 +7,7 @@ from pathlib import Path
 
 def do_inference(model, data_dir):
 
-    env = gym.make('spicy-v0', data_dir=data_dir)
+    env = gym.make('spicy-v0', data_dir=data_dir, bradify_state = False)
 
     test_set_size = len(env.data_files)
 
@@ -20,9 +20,10 @@ def do_inference(model, data_dir):
         done = False
 
         while not done:
-            (state, reward, done, info) = env.state(action)
+            (state, reward, done, info) = env.step(action)
             total_reward += reward
-            action = model.predict(state)
+            if not done:
+                action = model.predict(state)
 
         all_rewards.append(total_reward)
     
@@ -32,18 +33,24 @@ def do_inference(model, data_dir):
 
 class DantzigBaseline:
 
-    def predict(state):
+    def __init__(self):
+        pass
+
+    def predict(self, state):
         return dantzigs_rule(state)
 
 
 class SteeptestEdgeBaseline:
 
-    def predict(state):
+    def __init__(self):
+        pass
+
+    def predict(self, state):
         return steepest_edge_rule(state)
 
 
 BASELINES = {
-    "dantzip" : DantzigBaseline,
+    "dantzig" : DantzigBaseline,
     "steepest_edge" : SteeptestEdgeBaseline
 }
 
@@ -54,7 +61,7 @@ def main():
     
     parser.add_argument("--baseline", choices=BASELINES.keys(), required=True)
     parser.add_argument("--out", required=True)
-    parser.add_argument("--data_dir", type=Path, required=True)
+    parser.add_argument("--data_dir", type=str, required=True)
 
     args = parser.parse_args()
     model = BASELINES[args.baseline]()
