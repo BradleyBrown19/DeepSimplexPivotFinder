@@ -57,14 +57,9 @@ class Actor(nn.Module):
         # Produce action distributions for given observations, and 
         # optionally compute the log likelihood of given actions under
         # those distributions.
-        # import pdb; pdb.set_trace()
         pi = self._distribution(obs, candidates.to(torch.bool), do_simplex=True)
         logp_a = None
-        # import pdb; pdb.set_trace()
         if act is not None:
-            # act should be [batch]
-            # [batch,1]
-            # logp_a was [100,100], now it's [100]
             logp_a = self._log_prob_from_distribution(pi, act[:,0])
         return pi, logp_a
 
@@ -77,12 +72,6 @@ class MLPCategoricalActor(Actor):
 
     def _distribution(self, obs, candidates=None, do_simplex=False):
         logits = self.logits_net(obs)
-
-        # import pdb; pdb.set_trace()
-
-        # self.obs = obs.clone()
-        # self.cands = candidates.clone()
-        # self.test = logits.clone()
 
         if do_simplex:
             logits[candidates] = -math.inf
@@ -149,11 +138,10 @@ class MLPActorCritic(nn.Module):
         with torch.no_grad():
             pi = self.pi._distribution(obs, candidate_idxs, self.do_simplex)
             a = pi.sample()
-            # import pdb; pdb.set_trace()
             logp_a = self.pi._log_prob_from_distribution(pi, a)
             v = self.v(obs)
             
         return a.numpy(), v.numpy(), logp_a.numpy()
 
-    def act(self, obs):
-        return self.step(obs)[0]
+    def act(self, obs, cands):
+        return self.step(obs, cands)[0]

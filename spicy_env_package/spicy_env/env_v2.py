@@ -102,7 +102,10 @@ class SpicyGym(gym.Env):
         barr = np.array(data['b'])
         carr = np.array(data['c'])
 
-        num_vertices = int(data_dir.split("_")[-2].split("/")[-1])
+        try:
+            num_vertices = int(data_dir.split("_")[-2].split("/")[-1])
+        except:
+            num_vertices = int(data_dir.split("_")[-3].split("/")[-1])
 
         m = num_vertices**2+num_vertices+2
         n = num_vertices**2
@@ -170,14 +173,11 @@ class SpicyGym(gym.Env):
         info = {}
 
         if not done:
-            # print("Obj val: ", round(state[0][-1][-1],2))
             state = self.scipy_to_brad(state)
         else:
-            # print("="*200)
             state = None
 
         return (state, reward, done, info)
-    
 
 
     def simplex_generator(self, c, A_ub=None, b_ub=None, A_eq=None, b_eq=None, bounds=None, options=None, 
