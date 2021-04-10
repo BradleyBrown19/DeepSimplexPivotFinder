@@ -18,7 +18,7 @@ class PPOBuffer:
 
     def __init__(self, obs_dim, act_dim, size, gamma=0.99, lam=0.95, do_simplex=False):
         self.do_simplex = do_simplex
-        self.possible_pivot_size = 37
+        self.possible_pivot_size = 79
 
         self.obs_buf = (np.zeros(core.combined_shape(size, obs_dim), dtype=np.float32),np.zeros(core.combined_shape(size, self.possible_pivot_size), dtype=np.float32)) \
                 if self.do_simplex else np.zeros(core.combined_shape(size, obs_dim), dtype=np.float32)
