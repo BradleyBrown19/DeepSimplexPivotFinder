@@ -62,7 +62,7 @@ class SpicyGym(gym.Env):
 
     def load_data(self, data_dir):
         self.data_dir = Path(data_dir)
-        self.data_files = list(self.data_dir.glob("*"))
+        self.data_files = list(self.data_dir.glob("*"))[:10]
 
 
     def scipy_to_brad(self, state):

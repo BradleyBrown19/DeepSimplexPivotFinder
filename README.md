@@ -9,6 +9,8 @@ Go to spicy_env_package, 'run pip install -e .'
 
 ## Running Experiments
 
+PPO file is in spinup/algos/pytorch/ppo
+
 python -m spinup.run ppo --env Walker2d-v2 --simplex True --exp_name NAME --simplex_data PATH TO DATA WITH PICKLES [any other command flags (lex. r), see ppo.py method for options]
 
 ex. 

@@ -251,7 +251,11 @@ def ppo(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
         #     assert (np.abs(valid_idxs - np.array(act[i])) < 1e-3).sum() > 0
         # import pdb; pdb.set_trace()
 
+        # import pdb; pdb.set_trace()
+
         # Policy Loss
+        # print("Before policy inference")
+        # import pdb; pdb.set_trace()
         pi, logp = ac.pi(obs, candidates=cands, act=act)
         ratio = torch.exp(logp - logp_old)
         clip_adv = torch.clamp(ratio, 1-clip_ratio, 1+clip_ratio) * adv
@@ -278,6 +282,9 @@ def ppo(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
     # Set up model saving
     logger.setup_pytorch_saver(ac)
 
+
+    # euc_4_biggermlp
+
     def update():
         data = buf.get()
 
@@ -294,6 +301,13 @@ def ppo(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
                 logger.log('Early stopping at step %d due to reaching max kl.'%i)
                 break
             loss_pi.backward()
+            layers = [m for m in ac.pi.children()]
+            lay = [m for m in layers[0].children()]
+            # print("="*100)
+            # print((lay[0].weight.grad.mean()))
+            # print((lay[2].weight.grad.mean()))
+            # print((lay[4].weight.grad.mean()))
+            # import pdb; pdb.set_trace()
             mpi_avg_grads(ac.pi)    # average grads across MPI processes
             pi_optimizer.step()
 
@@ -321,6 +335,7 @@ def ppo(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
     # Main loop: collect experience in env and update/log each epoch
     for epoch in range(epochs):
         for t in range(local_steps_per_epoch):
+            # import pdb; pdb.set_trace()
             a, v, logp = ac.step(torch.as_tensor(o[0] if do_simplex else o, dtype=torch.float32), torch.as_tensor(o[1], dtype=torch.bool) if do_simplex else None)
 
             next_o, r, d, _ = env.step(a)
