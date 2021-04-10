@@ -32,6 +32,11 @@ messages = {0: "Optimization terminated successfully.",
 
 
 def dantzigs_rule(tableau):
+    """
+    Picks index with minimum cost
+    """
+
+
     last_row_vars = tableau[-1, :-1]
     return np.argmin(last_row_vars)
 
@@ -40,7 +45,11 @@ def norm(x):
     return np.sqrt(np.sum(x * x))
 
 
-def steepest_edge_rule(tableau)
+def steepest_edge_rule(tableau):
+    """
+    Picks index with minimum cost, scaled by norm of corresponding column
+    """
+
     num_vars = len(tableau[0]) - 1
     scores = np.zeros(num_vars)
     for i in range(num_vars):
