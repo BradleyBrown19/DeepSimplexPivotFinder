@@ -1,3 +1,5 @@
 .ds_store
 .vscode
 MUJUCO_LOG.TXT
+*.pyc
+__pycache__/
