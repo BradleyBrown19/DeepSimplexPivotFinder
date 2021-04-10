@@ -125,6 +125,7 @@ class SpicyGym(gym.Env):
 
         return (copy.deepcopy(T).flatten(), mult_by_valid)
 
+
     def reset(self):
         fname = self.data_dir / self.data_files[self.data_index]
         self.data_index = (self.data_index + 1) % len(self.data_files)
@@ -147,6 +148,7 @@ class SpicyGym(gym.Env):
             raise Exception("Generator terminated without producing any elements - maybe did everything in phase 1?")
 
         return self.scipy_to_brad(state)
+
 
     def step(self, action):
 
