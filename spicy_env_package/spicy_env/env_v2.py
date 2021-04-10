@@ -40,7 +40,7 @@ def norm(x):
     return np.sqrt(np.sum(x * x))
 
 
-def steepest_edge_rule(tableau)
+def steepest_edge_rule(tableau):
     num_vars = len(tableau[0]) - 1
     scores = np.zeros(num_vars)
     for i in range(num_vars):
@@ -86,7 +86,7 @@ class SpicyGym(gym.Env):
 
     def load_data(self, data_dir):
         self.data_dir = Path(data_dir)
-        self.data_files = list(self.data_dir.glob("*"))[:10]
+        self.data_files = list(self.data_dir.glob("*"))
 
 
     def scipy_to_brad(self, state):
