@@ -18,7 +18,7 @@ import scipy.sparse as sps
 import sys
 import copy
 # from pandas import *
-sys.path.append('/Users/bradleybrown/Desktop/Waterloo/Courses/3A/CO255/DeepSimplexPivotFinder/spicy_env_package/spicy_env')
+sys.path.append('/Users/jacklu/Documents/GitHub/DeepSimplexPivotFinder/spicy_env_package/spicy_env')
 
 from scipy_utils import *
 import scipy_utils
