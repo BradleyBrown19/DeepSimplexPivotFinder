@@ -31,32 +31,50 @@ messages = {0: "Optimization terminated successfully.",
                 4: "Optimization failed. Singular matrix encountered."}
 
 
-def dantzigs_rule(tableau):
+def dantzigs_rule(state):
     """
-    Picks index with minimum cost
+    Picks index with minimum cost.
+
+    NOTE: assumes a valid pivot index exists, else will raise an exception.
     """
 
+    tableau, tol, _ = state
 
     last_row_vars = tableau[-1, :-1]
-    return np.argmin(last_row_vars)
+    index = np.argmin(last_row_vars)
+
+    assert last_row_vars[index] < -tol, "Gosh darnit, whom'st'd've called this pivot rule where there ain't no valid pivots"
+    return index
 
 
 def norm(x):
     return np.sqrt(np.sum(x * x))
 
 
-def steepest_edge_rule(tableau):
+def steepest_edge_rule(state):
     """
-    Picks index with minimum cost, scaled by norm of corresponding column
+    Picks index with minimum cost, scaled by norm of corresponding column. 
+
+    NOTE: assumes a valid pivot index exists, else will raise an exception.
     """
 
+    tableau, tol, _ = state
+
     num_vars = len(tableau[0]) - 1
-    scores = np.zeros(num_vars)
+    scores = np.ones(num_vars) * np.inf
     for i in range(num_vars):
         raw_cost = tableau[-1][i]
+
+        if raw_cost >= -tol:
+            continue
+
         column_norm = norm(tableau[:-1, i])
         scores[i] = raw_cost / column_norm
-    return np.argmin(scores)
+    
+    index =  np.argmin(scores)
+
+    assert index[scores] < -tol, "AnGErY - no valid pivot exists"
+    return index
 
 
 HEURISTICS = [dantzigs_rule, steepest_edge_rule]
@@ -66,7 +84,7 @@ class SpicyGym(gym.Env):
     def __init__(self, data_dir, direct_column_selection = True):
         self.direct_column_selection = direct_column_selection
         self.data_dir = data_dir
-        self.cur_tableau = None
+        self.cur_state = None
         self.data_files = []
         self.data_index = 0
         self.generator = None
@@ -105,7 +123,6 @@ class SpicyGym(gym.Env):
         # non negative is true, else false 
         mult_by_valid = ma.mask
 
-        self.cur_tableau = T.copy()
         return (copy.deepcopy(T).flatten(), mult_by_valid)
 
     def reset(self):
@@ -125,6 +142,7 @@ class SpicyGym(gym.Env):
 
         try:
             state = next(self.generator)
+            self.cur_state = state
         except StopIteration:
             raise Exception("Generator terminated without producing any elements - maybe did everything in phase 1?")
 
@@ -144,6 +162,7 @@ class SpicyGym(gym.Env):
 
         try:
             state = next(self.generator)
+            self.cur_state = state
         except StopIteration:
             done = True
 
