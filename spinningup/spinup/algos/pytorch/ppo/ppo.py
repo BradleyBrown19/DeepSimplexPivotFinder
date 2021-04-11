@@ -16,9 +16,15 @@ class PPOBuffer:
     for calculating the advantages of state-action pairs.
     """
 
+<<<<<<< Updated upstream
     def __init__(self, obs_dim, act_dim, size, gamma=0.99, lam=0.95, do_masking=False, num_cands=37):
         self.do_masking = do_masking
         self.possible_pivot_size = num_cands
+=======
+    def __init__(self, obs_dim, act_dim, size, gamma=0.99, lam=0.95, do_simplex=False):
+        self.do_simplex = do_simplex
+        self.possible_pivot_size = 37
+>>>>>>> Stashed changes
 
         self.obs_buf = (np.zeros(core.combined_shape(size, obs_dim), dtype=np.float32),np.zeros(core.combined_shape(size, self.possible_pivot_size), dtype=np.float32)) \
                 if self.do_masking else np.zeros(core.combined_shape(size, obs_dim), dtype=np.float32)

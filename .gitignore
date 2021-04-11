@@ -3,3 +3,5 @@
 MUJUCO_LOG.TXT
 *.pyc
 __pycache__/
+.ipynb_checkpoints/
+
