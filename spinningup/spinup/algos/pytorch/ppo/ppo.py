@@ -16,12 +16,12 @@ class PPOBuffer:
     for calculating the advantages of state-action pairs.
     """
 
-    def __init__(self, obs_dim, act_dim, size, gamma=0.99, lam=0.95, do_simplex=False):
-        self.do_simplex = do_simplex
-        self.possible_pivot_size = 79
+    def __init__(self, obs_dim, act_dim, size, gamma=0.99, lam=0.95, do_masking=False, num_cands=37):
+        self.do_masking = do_masking
+        self.possible_pivot_size = num_cands
 
         self.obs_buf = (np.zeros(core.combined_shape(size, obs_dim), dtype=np.float32),np.zeros(core.combined_shape(size, self.possible_pivot_size), dtype=np.float32)) \
-                if self.do_simplex else np.zeros(core.combined_shape(size, obs_dim), dtype=np.float32)
+                if self.do_masking else np.zeros(core.combined_shape(size, obs_dim), dtype=np.float32)
         self.act_buf = np.zeros(core.combined_shape(size, 1), dtype=np.float32)
         self.adv_buf = np.zeros(size, dtype=np.float32)
         self.rew_buf = np.zeros(size, dtype=np.float32)
@@ -37,7 +37,7 @@ class PPOBuffer:
         """
         assert self.ptr < self.max_size     # buffer has to have room so you can store
         # import pdb; pdb.set_trace()
-        if self.do_simplex:
+        if self.do_masking:
             self.obs_buf[0][self.ptr] = obs[0]
             self.obs_buf[1][self.ptr] = obs[1]
         else:
@@ -89,8 +89,14 @@ class PPOBuffer:
         # the next two lines implement the advantage normalization trick
         adv_mean, adv_std = mpi_statistics_scalar(self.adv_buf)
         self.adv_buf = (self.adv_buf - adv_mean) / adv_std
-        data = dict(obs=self.obs_buf[0], cands=self.obs_buf[1], act=self.act_buf, ret=self.ret_buf,
+
+        if self.do_masking:
+            data = dict(obs=self.obs_buf[0], cands=self.obs_buf[1], act=self.act_buf, ret=self.ret_buf,
                     adv=self.adv_buf, logp=self.logp_buf)
+        else:
+            data = dict(obs=self.obs_buf, act=self.act_buf, ret=self.ret_buf,
+                    adv=self.adv_buf, logp=self.logp_buf)
+
         return {k: torch.as_tensor(v, dtype=torch.float32) for k,v in data.items()}
 
 
@@ -98,7 +104,8 @@ class PPOBuffer:
 def ppo(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0, 
         steps_per_epoch=4000, epochs=100, gamma=0.99, clip_ratio=0.2, pi_lr=3e-4,
         vf_lr=1e-3, train_pi_iters=80, train_v_iters=80, lam=0.97, max_ep_len=1000,
-        target_kl=0.01, logger_kwargs=dict(), save_freq=10, simplex_data="/test", do_simplex=False):
+        target_kl=0.01, logger_kwargs=dict(), save_freq=10, simplex_data="/test", do_simplex=False,
+        heuristic=False, full_tableau=True):
     """
     Proximal Policy Optimization (by clipping), 
 
@@ -217,7 +224,7 @@ def ppo(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
     # Instantiate environment
 
     if do_simplex:
-        env = env_fn(simplex_data)
+        env = env_fn(simplex_data, heuristic, full_tableau)
         obs_dim = env.observation_space.n
         act_dim = env.action_space.n
     else:
@@ -235,14 +242,20 @@ def ppo(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
     # Count variables
     var_counts = tuple(core.count_vars(module) for module in [ac.pi, ac.v])
     logger.log('\nNumber of parameters: \t pi: %d, \t v: %d\n'%var_counts)
-
+    
+    do_masking = do_simplex and not heuristic
     # Set up experience buffer
     local_steps_per_epoch = int(steps_per_epoch / num_procs())
-    buf = PPOBuffer(obs_dim, act_dim, local_steps_per_epoch, gamma, lam, do_simplex=do_simplex)
+    buf = PPOBuffer(obs_dim, act_dim, local_steps_per_epoch, gamma, lam, do_masking=do_masking,
+                        num_cands=env.action_space.n)
 
     # Set up function for computing PPO policy loss
     def compute_loss_pi(data):
-        obs, cands, act, adv, logp_old = data['obs'], data['cands'], data['act'], data['adv'], data['logp']
+        if do_masking:
+            obs, cands, act, adv, logp_old = data['obs'], data['cands'], data['act'], data['adv'], data['logp']
+        else:
+            obs, act, adv, logp_old = data['obs'], data['act'], data['adv'], data['logp']
+            cands = None
 
         # Sanity Check
         # for i in range(obs.shape[0]):
@@ -323,7 +336,8 @@ def ppo(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
     for epoch in range(epochs):
         for t in range(local_steps_per_epoch):
             # import pdb; pdb.set_trace()
-            a, v, logp = ac.step(torch.as_tensor(o[0] if do_simplex else o, dtype=torch.float32), torch.as_tensor(o[1], dtype=torch.bool) if do_simplex else None)
+            a, v, logp = ac.step(torch.as_tensor(o[0] if do_masking else o, dtype=torch.float32), \
+                torch.as_tensor(o[1], dtype=torch.bool) if do_masking else None)
 
             next_o, r, d, _ = env.step(a)
             ep_ret += r

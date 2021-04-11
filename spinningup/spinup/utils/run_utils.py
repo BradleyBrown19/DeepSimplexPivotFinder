@@ -159,7 +159,7 @@ def call_experiment(exp_name, thunk, seed=0, num_cpu=1, data_dir=None,
             if kwargs['simplex']:
                 import gym
                 assert 'simplex_data' in kwargs
-                kwargs['env_fn'] = lambda x : gym.make("spicy_env:spicy-v0", data_dir=x)
+                kwargs['env_fn'] = lambda x,y,z : gym.make("spicy_env:spicy-v0", data_dir=x, heuristic=y, full_tableau=z)
                 kwargs['do_simplex'] = True
                 del kwargs['simplex']
 

@@ -57,7 +57,7 @@ class Actor(nn.Module):
         # Produce action distributions for given observations, and 
         # optionally compute the log likelihood of given actions under
         # those distributions.
-        pi = self._distribution(obs, candidates.to(torch.bool), do_simplex=True)
+        pi = self._distribution(obs, candidates.to(torch.bool) if candidates is not None else None)
         logp_a = None
         if act is not None:
             logp_a = self._log_prob_from_distribution(pi, act[:,0])
@@ -70,10 +70,10 @@ class MLPCategoricalActor(Actor):
         super().__init__()
         self.logits_net = mlp([obs_dim] + list(hidden_sizes) + [act_dim], activation)
 
-    def _distribution(self, obs, candidates=None, do_simplex=False):
+    def _distribution(self, obs, candidates=None):
         logits = self.logits_net(obs)
 
-        if do_simplex:
+        if candidates is not None:
             logits[candidates] = -math.inf
 
         return Categorical(logits=logits)
@@ -113,13 +113,11 @@ class MLPCritic(nn.Module):
 class MLPActorCritic(nn.Module):
 
 
-    def __init__(self, observation_space, action_space, 
-                 hidden_sizes=(64,64), activation=nn.Tanh, do_simplex=False):
+    def __init__(self, observation_space, action_space, do_simplex,
+                 hidden_sizes=(64,64), activation=nn.Tanh):
         super().__init__()
 
-        self.do_simplex = do_simplex
-
-        if self.do_simplex:
+        if do_simplex:
             obs_dim = observation_space.n
         else:
             obs_dim = observation_space.shape[0]
@@ -133,10 +131,10 @@ class MLPActorCritic(nn.Module):
         # build value function
         self.v  = MLPCritic(obs_dim, hidden_sizes, activation)
 
-    def step(self, obs, candidate_idxs):
+    def step(self, obs, candidate_idxs=None):
         
         with torch.no_grad():
-            pi = self.pi._distribution(obs, candidate_idxs, self.do_simplex)
+            pi = self.pi._distribution(obs, candidate_idxs)
             a = pi.sample()
             logp_a = self.pi._log_prob_from_distribution(pi, a)
             v = self.v(obs)
