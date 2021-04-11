@@ -5,7 +5,6 @@ https://github.com/scipy/scipy/blob/20642e52fb3b158d41e4f7fea0c800ffd42b6955/sci
 https://github.com/scipy/scipy/blob/20642e52fb3b158d41e4f7fea0c800ffd42b6955/scipy/optimize/_linprog_simplex.py
 
 """
-print('HERE')
 
 import numpy as np
 import gym
@@ -17,6 +16,8 @@ from collections import namedtuple
 import scipy.sparse as sps
 import sys
 import copy
+import random
+
 # from pandas import *
 sys.path.append('/Users/bradleybrown/Desktop/Waterloo/Courses/3A/CO255/DeepSimplexPivotFinder/spicy_env_package/spicy_env')
 
@@ -75,6 +76,28 @@ def steepest_edge_rule(state):
 
     assert scores[index] < -tol, "AnGErY - no valid pivot exists"
     return index
+
+
+def random_rule(state):
+    """
+    Picks a random index with negative cost.
+
+    NOTE: assumes a valid pivot index exists, else will raise an exception.
+    """
+
+    tableau, tol, _ = state
+    num_vars = len(tableau[0]) - 1
+
+    indices = []
+
+    for i in range(num_vars):
+        if tableau[-1][i] < -tol:
+            indices.append(i)
+
+    
+    assert len(indices) > 0, "Ruh Roh, no valid pivots!"
+
+    return random.choice(indices)
 
 
 HEURISTICS = [dantzigs_rule, steepest_edge_rule]
