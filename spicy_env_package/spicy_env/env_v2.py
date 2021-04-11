@@ -104,9 +104,10 @@ HEURISTICS = [dantzigs_rule, steepest_edge_rule]
 
 
 class SpicyGym(gym.Env):
-    def __init__(self, data_dir, heuristic, full_tableau, bradify_state = True):
-        self.bradify_state = bradify_state
+    def __init__(self, data_dir, heuristic, full_tableau, return_raw_state = False, sort_files = False):
+        self.return_raw_state = return_raw_state
         self.direct_column_selection = not heuristic
+        self.sort_files = sort_files
         self.full_tableau = full_tableau
         self.data_dir = data_dir
         self.cur_state = None
@@ -145,6 +146,9 @@ class SpicyGym(gym.Env):
         self.data_dir = Path(data_dir)
         self.data_files = list(self.data_dir.glob("*"))
 
+        if self.sort_files:
+            self.data_files = list(sorted(self.data_files))
+
 
     def scipy_to_brad(self, T, tol=1e-9):
         if len(T.shape) == 1:
@@ -181,6 +185,10 @@ class SpicyGym(gym.Env):
         except StopIteration:
             raise Exception("Generator terminated without producing any elements - maybe did everything in phase 1?")
         
+
+        if self.return_raw_state:
+            return state
+
         obs,tol = copy.deepcopy(state[0]),state[1]
 
         if not self.full_tableau:
@@ -217,6 +225,9 @@ class SpicyGym(gym.Env):
         info = {}
 
         self.cur_tableau = state
+
+        if self.return_raw_state:
+            return (state, reward, done, info)
 
         if not done:
             obs,tol = copy.deepcopy(state[0]),state[1]
