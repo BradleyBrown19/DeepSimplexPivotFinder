@@ -19,7 +19,7 @@ import copy
 import random
 
 # from pandas import *
-sys.path.append('/Users/bradleybrown/Desktop/Waterloo/Courses/3A/CO255/DeepSimplexPivotFinder/spicy_env_package/spicy_env')
+# sys.path.append('/Users/bradleybrown/Desktop/Waterloo/Courses/3A/CO255/DeepSimplexPivotFinder/spicy_env_package/spicy_env')
 
 from spicy_env.scipy_utils import *
 from spicy_env import scipy_utils
@@ -78,13 +78,7 @@ def steepest_edge_rule(state):
     return index
 
 
-def random_rule(state):
-    """
-    Picks a random index with negative cost.
-
-    NOTE: assumes a valid pivot index exists, else will raise an exception.
-    """
-
+def available_pivots(state):
     tableau, tol, _ = state
     num_vars = len(tableau[0]) - 1
 
@@ -93,8 +87,18 @@ def random_rule(state):
     for i in range(num_vars):
         if tableau[-1][i] < -tol:
             indices.append(i)
-
     
+    return indices
+
+
+def random_rule(state):
+    """
+    Picks a random index with negative cost.
+
+    NOTE: assumes a valid pivot index exists, else will raise an exception.
+    """
+
+    indices = available_pivots(state)
     assert len(indices) > 0, "Ruh Roh, no valid pivots!"
 
     return random.choice(indices)
@@ -164,7 +168,12 @@ class SpicyGym(gym.Env):
     def tab_to_obj(self, tab):
         return tab[-1,:]
 
-    def reset(self):
+    def reset(self, same_file = False):
+
+        if same_file:
+            # print("Reusing same file")
+            self.data_index -= 1
+
         fname = self.data_dir / self.data_files[self.data_index]
         self.data_index = (self.data_index + 1) % len(self.data_files)
 
