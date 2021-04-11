@@ -56,7 +56,7 @@ def main():
     parser.add_argument("--data_dir", type=str, required=True)
 
     args = parser.parse_args()
-    model = BASELINES[args.baseline]()
+    model = BASELINES[args.baseline]
 
     results = do_inference(model, args.data_dir)
     print("Mean result: ", sum(results) / len(results))
