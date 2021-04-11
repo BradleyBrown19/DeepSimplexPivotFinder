@@ -241,7 +241,7 @@ class SpicyGym(gym.Env):
 
         else:
             obs = None
-        
+
         return (obs, reward, done, info)
 
 

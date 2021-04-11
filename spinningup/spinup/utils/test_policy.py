@@ -52,7 +52,7 @@ def load_policy_and_env(fpath, data_dir, heuristic=False, full_tableau=True, itr
     if backend == 'tf1':
         get_action = load_tf_policy(fpath, itr, deterministic)
     else:
-        get_action = load_pytorch_policy(fpath, itr, deterministic)
+        get_action = load_pytorch_policy(fpath, itr, heuristics=heuristic, deterministic=deterministic)
 
     # try to load environment from save
     # (sometimes this will fail because the environment could not be pickled)
@@ -92,7 +92,7 @@ def load_tf_policy(fpath, itr, deterministic=False):
     return get_action
 
 
-def load_pytorch_policy(fpath, itr, deterministic=False):
+def load_pytorch_policy(fpath, itr, heuristics=False, deterministic=False):
     """ Load a pytorch policy saved with Spinning Up Logger."""
     
     fname = osp.join(fpath, 'pyt_save', 'model'+itr+'.pt')
@@ -103,9 +103,13 @@ def load_pytorch_policy(fpath, itr, deterministic=False):
     # make function for producing an action given a single state
     def get_action(x):
         with torch.no_grad():
-            tab = torch.as_tensor(x[0], dtype=torch.float32)
-            cands = torch.as_tensor(x[1], dtype=torch.bool)
-            action = model.act(tab, cands)
+            if heuristics:
+                tab = torch.as_tensor(x, dtype=torch.float32)
+                action = model.act(tab, None)
+            else:
+                tab = torch.as_tensor(x[0], dtype=torch.float32)
+                cands = torch.as_tensor(x[1], dtype=torch.bool)
+                action = model.act(tab, cands)
         return action
 
     return get_action
@@ -122,7 +126,6 @@ def run_policy(env, get_action, max_ep_len=None, num_episodes=1000, render=False
     o, r, d, ep_ret, ep_len, n = env.reset(), 0, False, 0, 0, 0
     num_episodes = 1000
     while n < num_episodes:
-
         a = get_action(o)
         o, r, d, _ = env.step(a)
         ep_ret += r
@@ -152,7 +155,7 @@ if __name__ == '__main__':
     parser.add_argument('--itr', '-i', type=int, default=-1)
     parser.add_argument('--deterministic', '-d', action='store_true')
     args = parser.parse_args()
-    env, get_action = load_policy_and_env(args.fpath, args.data_dir, False, True,
+    env, get_action = load_policy_and_env(args.fpath, args.data_dir, False, False,
                                           args.itr if args.itr >=0 else 'last',
                                           args.deterministic)
     run_policy(env, get_action, args.len, args.episodes, not(args.norender))
