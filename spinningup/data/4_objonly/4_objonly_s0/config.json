@@ -1,0 +1,42 @@
+{
+    "ac_kwargs":	{},
+    "actor_critic":	"MLPActorCritic",
+    "clip_ratio":	0.2,
+    "do_simplex":	true,
+    "env_fn":	"<function call_experiment.<locals>.thunk_plus.<locals>.<lambda> at 0x10bcbc400>",
+    "epochs":	1000,
+    "exp_name":	"4_objonly",
+    "full_tableau":	false,
+    "gamma":	0.99,
+    "heuristic":	true,
+    "lam":	0.97,
+    "logger":	{
+        "<spinup.utils.logx.EpochLogger object at 0x10bc39c50>":	{
+            "epoch_dict":	{},
+            "exp_name":	"4_objonly",
+            "first_row":	true,
+            "log_current_row":	{},
+            "log_headers":	[],
+            "output_dir":	"/Users/bradleybrown/Desktop/Waterloo/Courses/3A/CO255/DeepSimplexPivotFinder/spinningup/data/4_objonly/4_objonly_s0",
+            "output_file":	{
+                "<_io.TextIOWrapper name='/Users/bradleybrown/Desktop/Waterloo/Courses/3A/CO255/DeepSimplexPivotFinder/spinningup/data/4_objonly/4_objonly_s0/progress.txt' mode='w' encoding='UTF-8'>":	{
+                    "mode":	"w"
+                }
+            }
+        }
+    },
+    "logger_kwargs":	{
+        "exp_name":	"4_objonly",
+        "output_dir":	"/Users/bradleybrown/Desktop/Waterloo/Courses/3A/CO255/DeepSimplexPivotFinder/spinningup/data/4_objonly/4_objonly_s0"
+    },
+    "max_ep_len":	1000,
+    "pi_lr":	0.0003,
+    "save_freq":	10,
+    "seed":	0,
+    "simplex_data":	"/Users/bradleybrown/Desktop/Waterloo/Courses/3A/CO255/DeepSimplexPivotFinder/data_generation/data/4_euclid",
+    "steps_per_epoch":	100,
+    "target_kl":	0.01,
+    "train_pi_iters":	80,
+    "train_v_iters":	80,
+    "vf_lr":	0.001
+}
