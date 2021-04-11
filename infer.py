@@ -5,6 +5,7 @@ import argparse
 import json
 from pathlib import Path
 
+
 def do_inference(model, data_dir):
 
     env = gym.make('spicy-v0', data_dir=data_dir, heuristic = False, full_tableau = True, return_raw_state = True, sort_files = True)
