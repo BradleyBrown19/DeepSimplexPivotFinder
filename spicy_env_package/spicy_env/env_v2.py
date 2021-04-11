@@ -185,11 +185,16 @@ class SpicyGym(gym.Env):
 
         if not self.full_tableau:
             obs = self.tab_to_obj(obs)
-        else:
-            obs = obs.flatten() 
         
         if self.direct_column_selection:
             obs = self.scipy_to_brad(obs, tol)
+        
+            if len(obs[0].shape) > 1:
+                obs[0] = obs[0].flatten()
+
+        else:
+            if len(obs.shape) > 1:
+                obs = obs.flatten()
         
         self.cur_tableau = state
 
@@ -223,11 +228,17 @@ class SpicyGym(gym.Env):
 
             if not self.full_tableau:
                 obs = self.tab_to_obj(obs)
-            else:
-                obs = obs.flatten() 
-        
+            
             if self.direct_column_selection:
-                obs = self.scipy_to_brad(obs,tol=tol)
+                obs = self.scipy_to_brad(obs, tol)
+            
+                if len(obs[0].shape) > 1:
+                    obs[0] = obs[0].flatten()
+
+            else:
+                if len(obs.shape) > 1:
+                    obs = obs.flatten()
+
         else:
             obs = None
         

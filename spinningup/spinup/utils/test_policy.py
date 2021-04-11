@@ -9,7 +9,7 @@ import gym
 from spinup.utils.logx import restore_tf_graph
 
 
-def load_policy_and_env(fpath, data_dir, itr='last', deterministic=False):
+def load_policy_and_env(fpath, data_dir, heuristic=False, full_tableau=True, itr='last', deterministic=False):
     """
     Load a policy from save, whether it's TF or PyTorch, along with RL env.
 
@@ -62,7 +62,7 @@ def load_policy_and_env(fpath, data_dir, itr='last', deterministic=False):
     except:
         env = None
 
-    env = gym.make("spicy_env:spicy-v0", data_dir=data_dir)
+    env = gym.make("spicy_env:spicy-v0", data_dir=data_dir, heuristic=heuristic, full_tableau=full_tableau)
 
     return env, get_action
 
@@ -143,13 +143,15 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('fpath', type=str)
     parser.add_argument('--data_dir', type=str, default="")
+    parser.add_argument('--heuristic', type=bool, default=False)
+    parser.add_argument('--full_tableau', type=bool, default=True)
     parser.add_argument('--len', '-l', type=int, default=0)
     parser.add_argument('--episodes', '-n', type=int, default=100)
     parser.add_argument('--norender', '-nr', action='store_true')
     parser.add_argument('--itr', '-i', type=int, default=-1)
     parser.add_argument('--deterministic', '-d', action='store_true')
     args = parser.parse_args()
-    env, get_action = load_policy_and_env(args.fpath, args.data_dir,
+    env, get_action = load_policy_and_env(args.fpath, args.data_dir, heuristic, full_tableau,
                                           args.itr if args.itr >=0 else 'last',
                                           args.deterministic)
     run_policy(env, get_action, args.len, args.episodes, not(args.norender))
