@@ -1,5 +1,5 @@
 import gym
-from spicy_env.env_v2 import dantzigs_rule, steepest_edge_rule
+from spicy_env.env_v2 import dantzigs_rule, steepest_edge_rule, random_rule
 from tqdm import tqdm
 import argparse
 import json
@@ -31,27 +31,19 @@ def do_inference(model, data_dir):
 
 
 
-class DantzigBaseline:
+class Predictor:
 
-    def __init__(self):
-        pass
-
+    def __init__(self, rule):
+        self.rule = rule
+    
     def predict(self, state):
-        return dantzigs_rule(state)
-
-
-class SteeptestEdgeBaseline:
-
-    def __init__(self):
-        pass
-
-    def predict(self, state):
-        return steepest_edge_rule(state)
+        return self.rule(state)
 
 
 BASELINES = {
-    "dantzig" : DantzigBaseline,
-    "steepest_edge" : SteeptestEdgeBaseline
+    "dantzig" : Predictor(dantzigs_rule),
+    "steepest_edge" : Predictor(steepest_edge_rule),
+    "random" : Predictor(random_rule)
 }
 
 
