@@ -18,6 +18,9 @@ import sys
 import copy
 import random
 
+# from pandas import *
+sys.path.append('/Users/bradleybrown/Desktop/Waterloo/Courses/3A/CO255/DeepSimplexPivotFinder/spicy_env_package/spicy_env')
+
 from spicy_env.scipy_utils import *
 from spicy_env import scipy_utils
 
@@ -101,9 +104,10 @@ HEURISTICS = [dantzigs_rule, steepest_edge_rule]
 
 
 class SpicyGym(gym.Env):
-    def __init__(self, data_dir, direct_column_selection = True, bradify_state = True):
+    def __init__(self, data_dir, heuristic, full_tableau, bradify_state = True):
         self.bradify_state = bradify_state
-        self.direct_column_selection = direct_column_selection
+        self.direct_column_selection = not heuristic
+        self.full_tableau = full_tableau
         self.data_dir = data_dir
         self.cur_state = None
         self.data_files = []
@@ -131,8 +135,10 @@ class SpicyGym(gym.Env):
         m = num_vertices**2+num_vertices+2
         n = num_vertices**2
 
-        self.action_space = spaces.Discrete(n-1+m)
-        self.observation_space = spaces.Discrete((m+1)*(m+n))
+        self.action_space = spaces.Discrete(n-1+m) if \
+            self.direct_column_selection else spaces.Discrete(len(HEURISTICS))
+        self.observation_space = spaces.Discrete((m+1)*(m+n)) if \
+             self.full_tableau else spaces.Discrete(m+n)
 
 
     def load_data(self, data_dir):
@@ -140,15 +146,19 @@ class SpicyGym(gym.Env):
         self.data_files = list(self.data_dir.glob("*"))
 
 
-    def scipy_to_brad(self, state):
-        T, tol, bland = state
-        ma = np.ma.masked_where(T[-1, :-1] >= -tol, T[-1, :-1], copy=True)
+    def scipy_to_brad(self, T, tol=1e-9):
+        if len(T.shape) == 1:
+            ma = np.ma.masked_where(T[:-1] >= -tol, T[:-1], copy=True)
+        else:
+            ma = np.ma.masked_where(T[-1, :-1] >= -tol, T[-1, :-1], copy=True)
         
         # non negative is true, else false 
         mult_by_valid = ma.mask
 
         return (copy.deepcopy(T).flatten(), mult_by_valid)
-
+    
+    def tab_to_obj(self, tab):
+        return tab[-1,:]
 
     def reset(self):
         fname = self.data_dir / self.data_files[self.data_index]
@@ -170,11 +180,20 @@ class SpicyGym(gym.Env):
             self.cur_state = state
         except StopIteration:
             raise Exception("Generator terminated without producing any elements - maybe did everything in phase 1?")
+        
+        obs,tol = copy.deepcopy(state[0]),state[1]
 
-        if self.bradify_state:
-            state = self.scipy_to_brad(state)
+        if not self.full_tableau:
+            obs = self.tab_to_obj(obs)
+        else:
+            obs = obs.flatten() 
+        
+        if self.direct_column_selection:
+            obs = self.scipy_to_brad(obs, tol)
+        
+        self.cur_tableau = state
 
-        return state 
+        return obs 
 
     def step(self, action):
 
@@ -197,13 +216,22 @@ class SpicyGym(gym.Env):
         reward = -1
         info = {}
 
-        if not done:
-            if self.bradify_state:
-                state = self.scipy_to_brad(state)
-        else:
-            state = None
+        self.cur_tableau = state
 
-        return (state, reward, done, info)
+        if not done:
+            obs,tol = copy.deepcopy(state[0]),state[1]
+
+            if not self.full_tableau:
+                obs = self.tab_to_obj(obs)
+            else:
+                obs = obs.flatten() 
+        
+            if self.direct_column_selection:
+                obs = self.scipy_to_brad(obs,tol=tol)
+        else:
+            obs = None
+        
+        return (obs, reward, done, info)
 
 
     def simplex_generator(self, c, A_ub=None, b_ub=None, A_eq=None, b_eq=None, bounds=None, options=None, 
