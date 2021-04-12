@@ -121,8 +121,12 @@ class SpicyGym(gym.Env):
         self.output = None
         self.pivot = None
         self.load_data(data_dir)
+        
+        try:
+            fname = self.data_dir / self.data_files[self.data_index]
+        except:
+            import pdb; pdb.set_trace();
 
-        fname = self.data_dir / self.data_files[self.data_index]
         self.data_index = (self.data_index + 1) % len(self.data_files)
 
         with open(fname, "rb") as file:

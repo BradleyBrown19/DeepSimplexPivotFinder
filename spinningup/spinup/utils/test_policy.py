@@ -147,7 +147,7 @@ if __name__ == '__main__':
     parser.add_argument('--heuristic', type=bool, default=False)
     parser.add_argument('--full_tableau', type=bool, default=True)
     parser.add_argument('--len', '-l', type=int, default=0)
-    parser.add_argument('--episodes', '-n', type=int, default=100)
+    parser.add_argument('--episodes', '-n', type=int, default=1000)
     parser.add_argument('--norender', '-nr', action='store_true')
     parser.add_argument('--itr', '-i', type=int, default=-1)
     parser.add_argument('--deterministic', '-d', action='store_true')
