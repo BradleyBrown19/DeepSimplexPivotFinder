@@ -1,3 +1,8 @@
+"""
+Runs a branch and bound brute force on the simplex to find the minimum possible
+shortest path.
+"""
+
 import heapq
 import copy
 import gym
@@ -62,7 +67,6 @@ def brute_force_env(env):
     return (best_length, configs_tried)
 
 
-
 def main():
     parser = argparse.ArgumentParser()
 
@@ -76,13 +80,13 @@ def main():
         return_raw_state = True, 
         data_dir = args.data_dir, 
         heuristic = False,  
-        full_tableau = True
+        full_tableau = True,
+        sort_files = True
     )
 
     brute_force_results = []
-    # for i in tqdm(range(len(env.data_files))):
-    for i in tqdm(range(10)):
-
+    for i in tqdm(range(len(env.data_files))):
+    # for i in tqdm(range(10)):
 
         # Tick the file counter
         env.reset()
