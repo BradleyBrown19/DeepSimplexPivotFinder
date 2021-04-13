@@ -1,3 +1,8 @@
+"""
+For measuring the performance of baseline heuristics to compare to our models.
+"""
+
+
 import gym
 from spicy_env.env_v2 import dantzigs_rule, steepest_edge_rule, random_rule
 from tqdm import tqdm
