@@ -16,15 +16,9 @@ class PPOBuffer:
     for calculating the advantages of state-action pairs.
     """
 
-<<<<<<< Updated upstream
     def __init__(self, obs_dim, act_dim, size, gamma=0.99, lam=0.95, do_masking=False, num_cands=37):
         self.do_masking = do_masking
         self.possible_pivot_size = num_cands
-=======
-    def __init__(self, obs_dim, act_dim, size, gamma=0.99, lam=0.95, do_simplex=False):
-        self.do_simplex = do_simplex
-        self.possible_pivot_size = 37
->>>>>>> Stashed changes
 
         self.obs_buf = (np.zeros(core.combined_shape(size, obs_dim), dtype=np.float32),np.zeros(core.combined_shape(size, self.possible_pivot_size), dtype=np.float32)) \
                 if self.do_masking else np.zeros(core.combined_shape(size, obs_dim), dtype=np.float32)
@@ -42,7 +36,7 @@ class PPOBuffer:
         Append one timestep of agent-environment interaction to the buffer.
         """
         assert self.ptr < self.max_size     # buffer has to have room so you can store
-        # import pdb; pdb.set_trace()
+     
         if self.do_masking:
             self.obs_buf[0][self.ptr] = obs[0]
             self.obs_buf[1][self.ptr] = obs[1]
@@ -76,6 +70,7 @@ class PPOBuffer:
         vals = np.append(self.val_buf[path_slice], last_val)
         
         # the next two lines implement GAE-Lambda advantage calculation
+      
         deltas = rews[:-1] + self.gamma * vals[1:] - vals[:-1]
         self.adv_buf[path_slice] = core.discount_cumsum(deltas, self.gamma * self.lam)
         
@@ -341,7 +336,7 @@ def ppo(env_fn, actor_critic=core.MLPActorCritic, ac_kwargs=dict(), seed=0,
     # Main loop: collect experience in env and update/log each epoch
     for epoch in range(epochs):
         for t in range(local_steps_per_epoch):
-            # import pdb; pdb.set_trace()
+
             a, v, logp = ac.step(torch.as_tensor(o[0] if do_masking else o, dtype=torch.float32), \
                 torch.as_tensor(o[1], dtype=torch.bool) if do_masking else None)
 
