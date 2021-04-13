@@ -44,7 +44,7 @@ def dantzigs_rule(state):
     last_row_vars = tableau[-1, :-1]
     index = np.argmin(last_row_vars)
 
-    assert last_row_vars[index] < -tol, "Gosh darnit, whom'st'd've called this pivot rule where there ain't no valid pivots"
+    assert last_row_vars[index] < -tol, "No valid pivots"
     return index
 
 
@@ -74,7 +74,7 @@ def steepest_edge_rule(state):
     
     index = np.argmin(scores)
 
-    assert scores[index] < -tol, "AnGErY - no valid pivot exists"
+    assert scores[index] < -tol, "No valid pivots"
     return index
 
 
@@ -99,7 +99,7 @@ def random_rule(state):
     """
 
     indices = available_pivots(state)
-    assert len(indices) > 0, "Ruh Roh, no valid pivots!"
+    assert len(indices) > 0, "No valid pivots"
 
     return random.choice(indices)
 
@@ -123,7 +123,7 @@ class SpicyGym(gym.Env):
         self.load_data(data_dir)
         
         try:
-            fname = self.data_dir / self.data_files[self.data_index]
+            fname = self.data_files[self.data_index]
         except:
             import pdb; pdb.set_trace();
 
@@ -179,7 +179,7 @@ class SpicyGym(gym.Env):
             # print("Reusing same file")
             self.data_index -= 1
 
-        fname = self.data_dir / self.data_files[self.data_index]
+        fname = self.data_files[self.data_index]
         self.data_index = (self.data_index + 1) % len(self.data_files)
 
         with open(fname, "rb") as file:
