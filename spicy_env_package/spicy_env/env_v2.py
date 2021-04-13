@@ -137,8 +137,9 @@ class SpicyGym(gym.Env):
         carr = np.array(data['c'])
 
         try:
-            num_vertices = int(data_dir.split("_")[-2].split("/")[-1])
+            num_vertices = 4
         except:
+            import pdb; pdb.set_trace();
             num_vertices = int(data_dir.split("_")[-3].split("/")[-1])
 
         m = num_vertices**2+num_vertices+2
