@@ -1,6 +1,8 @@
 # DeepSimplexPivotFinder
 
 ## Code Structure
+
+```
 .
 ├── spinningup // PPO algorithm, training and testing
 ├── data_generation
@@ -9,6 +11,7 @@
 ├── spicy_env_package // Simplex solving gym
 ├── PolicyExploration.ipynb // Policy interpretation notebook
 ├── visualization // Notebook to generate figures
+```
 
 ## Installation
 
